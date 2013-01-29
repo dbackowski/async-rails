@@ -1,4 +1,4 @@
-# Async::Rails
+# async-rails
 
 Rails asset pipeline wrapper for [async.js](https://github.com/caolan/async).
 
