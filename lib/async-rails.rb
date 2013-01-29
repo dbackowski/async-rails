@@ -1,6 +1,6 @@
 require "async-rails/version"
 
-module Momentjs
+module Async
   module Rails
     class Engine < ::Rails::Engine
     end
