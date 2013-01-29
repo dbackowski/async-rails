@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.summary       = "Rails asset pipeline wrapper for async.js"
   gem.homepage      = "https://github.com/jhchen/async-rails"
 
-  gem.files         = Dir["{lib,vendor}/**/*"] + ["README.md"]
+  gem.files         = Dir["{lib,vendor}/**/*"] + ["MIT-LICENSE", "README.md"]
   gem.name          = "async-rails"
   gem.require_paths = ["lib"]
   gem.version       = Async::Rails::VERSION
