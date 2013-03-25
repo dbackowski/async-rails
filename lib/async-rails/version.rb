@@ -1,5 +1,5 @@
 module Async
   module Rails
-    VERSION = "1.0.1"
+    VERSION = "0.2.5"
   end
 end
