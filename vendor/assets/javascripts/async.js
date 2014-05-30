@@ -755,6 +755,9 @@
             },
             running: function () {
                 return workers;
+            },
+            idle: function() {
+                return q.tasks.length + workers === 0;
             }
         };
         return q;
