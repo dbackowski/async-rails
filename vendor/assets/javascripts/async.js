@@ -28,13 +28,10 @@
 
     //// cross-browser compatiblity functions ////
 
-    var _isArray = Array.isArray || function (obj) {
-        return toString.call(obj) === '[object Array]';
-    };
+    var _toString = Object.prototype.toString;
 
-    var _isFunction = function (obj) {
-        return obj instanceof Function ||
-        toString.call(obj) === '[object Function]';
+    var _isArray = Array.isArray || function (obj) {
+        return _toString.call(obj) === '[object Array]';
     };
 
     var _each = function (arr, iterator) {
@@ -444,7 +441,7 @@
         });
 
         _each(keys, function (k) {
-            var task = _isFunction(tasks[k]) ? [tasks[k]]: tasks[k];
+            var task = _isArray(tasks[k]) ? tasks[k]: [tasks[k]];
             var taskCallback = function (err) {
                 var args = Array.prototype.slice.call(arguments, 1);
                 if (args.length <= 1) {
