@@ -1,3 +1,4 @@
+/*jshint onevar: false, indent:4 */
 /*global setImmediate: false, setTimeout: false, console: false */
 (function () {
 
@@ -26,6 +27,10 @@
     }
 
     //// cross-browser compatiblity functions ////
+
+    var _isArray = Array.isArray || function (obj) {
+        return toString.call(obj) === '[object Array]';
+    };
 
     var _each = function (arr, iterator) {
         if (arr.forEach) {
@@ -108,19 +113,20 @@
         }
         var completed = 0;
         _each(arr, function (x) {
-            iterator(x, only_once(function (err) {
-                if (err) {
-                    callback(err);
-                    callback = function () {};
-                }
-                else {
-                    completed += 1;
-                    if (completed >= arr.length) {
-                        callback(null);
-                    }
-                }
-            }));
+            iterator(x, only_once(done) );
         });
+        function done(err) {
+          if (err) {
+              callback(err);
+              callback = function () {};
+          }
+          else {
+              completed += 1;
+              if (completed >= arr.length) {
+                  callback(null);
+              }
+          }
+        }
     };
     async.forEach = async.each;
 
@@ -422,8 +428,11 @@
 
         addListener(function () {
             if (_keys(results).length === keys.length) {
-                callback(null, results);
+                var theCallback = callback;
+                // prevent final callback from calling itself if it errors
                 callback = function () {};
+
+                theCallback(null, results);
             }
         });
 
@@ -472,7 +481,7 @@
 
     async.waterfall = function (tasks, callback) {
         callback = callback || function () {};
-        if (tasks.constructor !== Array) {
+        if (!_isArray(tasks)) {
           var err = new Error('First argument to waterfall must be an array of functions');
           return callback(err);
         }
@@ -505,7 +514,7 @@
 
     var _parallel = function(eachfn, tasks, callback) {
         callback = callback || function () {};
-        if (tasks.constructor === Array) {
+        if (_isArray(tasks)) {
             eachfn.map(tasks, function (fn, callback) {
                 if (fn) {
                     fn(function (err) {
@@ -545,7 +554,7 @@
 
     async.series = function (tasks, callback) {
         callback = callback || function () {};
-        if (tasks.constructor === Array) {
+        if (_isArray(tasks)) {
             async.mapSeries(tasks, function (fn, callback) {
                 if (fn) {
                     fn(function (err) {
@@ -633,7 +642,8 @@
             if (err) {
                 return callback(err);
             }
-            if (test()) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (test.apply(null, args)) {
                 async.doWhilst(iterator, test, callback);
             }
             else {
@@ -661,7 +671,8 @@
             if (err) {
                 return callback(err);
             }
-            if (!test()) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (!test.apply(null, args)) {
                 async.doUntil(iterator, test, callback);
             }
             else {
@@ -675,8 +686,16 @@
             concurrency = 1;
         }
         function _insert(q, data, pos, callback) {
-          if(data.constructor !== Array) {
+          if (!_isArray(data)) {
               data = [data];
+          }
+          if(data.length == 0) {
+             // call drain immediately if there are no tasks
+             return async.setImmediate(function() {
+                 if (q.drain) {
+                     q.drain();
+                 }
+             });
           }
           _each(data, function(task) {
               var item = {
@@ -690,7 +709,7 @@
                 q.tasks.push(item);
               }
 
-              if (q.saturated && q.tasks.length === concurrency) {
+              if (q.saturated && q.tasks.length === q.concurrency) {
                   q.saturated();
               }
               async.setImmediate(q.process);
@@ -751,8 +770,9 @@
             saturated: null,
             empty: null,
             drain: null,
+            drained: true,
             push: function (data, callback) {
-                if(data.constructor !== Array) {
+                if (!_isArray(data)) {
                     data = [data];
                 }
                 _each(data, function(task) {
@@ -760,6 +780,7 @@
                         data: task,
                         callback: typeof callback === 'function' ? callback : null
                     });
+                    cargo.drained = false;
                     if (cargo.saturated && tasks.length === payload) {
                         cargo.saturated();
                     }
@@ -769,13 +790,14 @@
             process: function process() {
                 if (working) return;
                 if (tasks.length === 0) {
-                    if(cargo.drain) cargo.drain();
+                    if(cargo.drain && !cargo.drained) cargo.drain();
+                    cargo.drained = true;
                     return;
                 }
 
                 var ts = typeof payload === 'number'
                             ? tasks.splice(0, payload)
-                            : tasks.splice(0);
+                            : tasks.splice(0, tasks.length);
 
                 var ds = _map(ts, function (task) {
                     return task.data;
@@ -843,7 +865,9 @@
             var callback = args.pop();
             var key = hasher.apply(null, args);
             if (key in memo) {
-                callback.apply(null, memo[key]);
+                async.nextTick(function () {
+                    callback.apply(null, memo[key]);
+                });
             }
             else if (key in queues) {
                 queues[key].push(callback);
@@ -887,8 +911,8 @@
         return async.mapSeries(counter, iterator, callback);
     };
 
-    async.compose = function (/* functions... */) {
-        var fns = Array.prototype.reverse.call(arguments);
+    async.seq = function (/* functions... */) {
+        var fns = arguments;
         return function () {
             var that = this;
             var args = Array.prototype.slice.call(arguments);
@@ -904,6 +928,10 @@
                 callback.apply(that, [err].concat(results));
             });
         };
+    };
+
+    async.compose = function (/* functions... */) {
+      return async.seq.apply(null, Array.prototype.reverse.call(arguments));
     };
 
     var _applyEach = function (eachfn, fns /*args...*/) {
@@ -940,15 +968,15 @@
         next();
     };
 
+    // Node.js
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = async;
+    }
     // AMD / RequireJS
-    if (typeof define !== 'undefined' && define.amd) {
+    else if (typeof define !== 'undefined' && define.amd) {
         define([], function () {
             return async;
         });
-    }
-    // Node.js
-    else if (typeof module !== 'undefined' && module.exports) {
-        module.exports = async;
     }
     // included directly via <script> tag
     else {
