@@ -1,3 +1,10 @@
+/*!
+ * async
+ * https://github.com/caolan/async
+ *
+ * Copyright 2010-2014 Caolan McMahon
+ * Released under the MIT license
+ */
 /*jshint onevar: false, indent:4 */
 /*global setImmediate: false, setTimeout: false, console: false */
 (function () {
@@ -227,18 +234,26 @@
 
 
     var _asyncMap = function (eachfn, arr, iterator, callback) {
-        var results = [];
         arr = _map(arr, function (x, i) {
             return {index: i, value: x};
         });
-        eachfn(arr, function (x, callback) {
-            iterator(x.value, function (err, v) {
-                results[x.index] = v;
-                callback(err);
+        if (!callback) {
+            eachfn(arr, function (x, callback) {
+                iterator(x.value, function (err) {
+                    callback(err);
+                });
             });
-        }, function (err) {
-            callback(err, results);
-        });
+        } else {
+            var results = [];
+            eachfn(arr, function (x, callback) {
+                iterator(x.value, function (err, v) {
+                    results[x.index] = v;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
     };
     async.map = doParallel(_asyncMap);
     async.mapSeries = doSeries(_asyncMap);
