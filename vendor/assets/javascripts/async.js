@@ -42,9 +42,6 @@
     };
 
     var _each = function (arr, iterator) {
-        if (arr.forEach) {
-            return arr.forEach(iterator);
-        }
         for (var i = 0; i < arr.length; i += 1) {
             iterator(arr[i], i, arr);
         }
@@ -821,12 +818,15 @@
             pause: function () {
                 if (q.paused === true) { return; }
                 q.paused = true;
-                q.process();
             },
             resume: function () {
                 if (q.paused === false) { return; }
                 q.paused = false;
-                q.process();
+                // Need to call q.process once per concurrent
+                // worker to preserve full concurrency after pause
+                for (var w = 1; w <= q.concurrency; w++) {
+                    async.setImmediate(q.process);
+                }
             }
         };
         return q;

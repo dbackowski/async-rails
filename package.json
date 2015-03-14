@@ -1,10 +1,10 @@
 {
   "name": "async-rails",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Rails asset pipeline wrapper for async.js",
   "main": "index.js",
   "dependencies": {
-    "async": "~0.9.0"
+    "async": "0.9.1"
   },
   "repository": {
     "type": "git",
