@@ -247,25 +247,29 @@
         callback = _once(callback || noop);
         obj = obj || [];
         var nextKey = _keyIterator(obj);
+        var key = nextKey();
         function iterate() {
             var sync = true;
-            var key = nextKey();
             if (key === null) {
                 return callback(null);
             }
-            iterator(obj[key], key, function (err) {
+            iterator(obj[key], key, only_once(function (err) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    if (sync) {
-                        async.nextTick(iterate);
-                    }
-                    else {
-                        iterate();
+                    key = nextKey();
+                    if (key === null) {
+                        return callback(null);
+                    } else {
+                        if (sync) {
+                            async.nextTick(iterate);
+                        } else {
+                            iterate();
+                        }
                     }
                 }
-            });
+            }));
             sync = false;
         }
         iterate();
@@ -306,7 +310,7 @@
                         return;
                     }
                     running += 1;
-                    iterator(obj[key], key, function (err) {
+                    iterator(obj[key], key, only_once(function (err) {
                         running -= 1;
                         if (err) {
                             callback(err);
@@ -315,7 +319,7 @@
                         else {
                             replenish();
                         }
-                    });
+                    }));
                 }
             })();
         };
