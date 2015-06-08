@@ -93,6 +93,10 @@
       return result;
     }
 
+    function _range(count) {
+        return _map(Array(count), function (v, i) { return i; });
+    }
+
     function _reduce(arr, iterator, memo) {
         _arrayEach(arr, function (x, i, a) {
             memo = iterator(memo, x, i, a);
@@ -217,7 +221,7 @@
     async.eachOf = function (object, iterator, callback) {
         callback = _once(callback || noop);
         object = object || [];
-        var size = object.length || _keys(object).length;
+        var size = _isArrayLike(object) ? object.length : _keys(object).length;
         var completed = 0;
         if (!size) {
             return callback(null);
@@ -834,8 +838,21 @@
                 if (q.tasks.length === q.concurrency) {
                     q.saturated();
                 }
-                async.setImmediate(q.process);
             });
+            async.setImmediate(q.process);
+        }
+        function _next(q, tasks) {
+            return function(){
+                workers -= 1;
+                var args = arguments;
+                _arrayEach(tasks, function (task) {
+                    task.callback.apply(task, args);
+                });
+                if (q.tasks.length + workers === 0) {
+                    q.drain();
+                }
+                q.process();
+            };
         }
 
         var workers = 0;
@@ -859,32 +876,22 @@
             },
             process: function () {
                 if (!q.paused && workers < q.concurrency && q.tasks.length) {
-                    var tasks = payload ?
-                        q.tasks.splice(0, payload) :
-                        q.tasks.splice(0, q.tasks.length);
+                    while(workers < q.concurrency && q.tasks.length){
+                        var tasks = payload ?
+                            q.tasks.splice(0, payload) :
+                            q.tasks.splice(0, q.tasks.length);
 
-                    var data = _map(tasks, function (task) {
-                        return task.data;
-                    });
+                        var data = _map(tasks, function (task) {
+                            return task.data;
+                        });
 
-                    if (q.tasks.length === 0) {
-                        q.empty();
+                        if (q.tasks.length === 0) {
+                            q.empty();
+                        }
+                        workers += 1;
+                        var cb = only_once(_next(q, tasks));
+                        worker(data, cb);
                     }
-                    workers += 1;
-                    var cb = only_once(next);
-                    worker(data, cb);
-                }
-
-                function next() {
-                    workers -= 1;
-                    var args = arguments;
-                    _arrayEach(tasks, function (task) {
-                        task.callback.apply(task, args);
-                    });
-                    if (q.tasks.length + workers === 0) {
-                        q.drain();
-                    }
-                    q.process();
                 }
             },
             length: function () {
@@ -1056,20 +1063,16 @@
       };
     };
 
-    async.times = function (count, iterator, callback) {
-        var counter = [];
-        for (var i = 0; i < count; i++) {
-            counter.push(i);
-        }
-        return async.map(counter, iterator, callback);
-    };
+    function _times(mapper) {
+        return function (count, iterator, callback) {
+            mapper(_range(count), iterator, callback);
+        };
+    }
 
-    async.timesSeries = function (count, iterator, callback) {
-        var counter = [];
-        for (var i = 0; i < count; i++) {
-            counter.push(i);
-        }
-        return async.mapSeries(counter, iterator, callback);
+    async.times = _times(async.map);
+    async.timesSeries = _times(async.mapSeries);
+    async.timesLimit = function (count, limit, iterator, callback) {
+        return async.mapLimit(_range(count), limit, iterator, callback);
     };
 
     async.seq = function (/* functions... */) {
