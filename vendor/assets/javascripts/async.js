@@ -2923,7 +2923,7 @@ function doDuring(fn, test, callback) {
  * passes. The function is passed a `callback(err)`, which must be called once
  * it has completed with an optional `err` argument. Invoked with (callback).
  * @param {Function} test - synchronous truth test to perform after each
- * execution of `iteratee`. Invoked with the non-error callback results of
+ * execution of `iteratee`. Invoked with the non-error callback results of 
  * `iteratee`.
  * @param {Function} [callback] - A callback which is called after the test
  * function has failed and repeated execution of `iteratee` has stopped.
