@@ -2,8 +2,8 @@
 require File.expand_path('../lib/async-rails/version', __FILE__)
 
 Gem::Specification.new do |gem|
-  gem.authors       = ["Jason Chen"]
-  gem.email         = ["jhchen7@gmail.com"]
+  gem.authors       = ["Jason Chen", "Damian Baćkowski"]
+  gem.email         = ["jhchen7@gmail.com", "damianbackowski@gmail.com"]
   gem.description   = "Rails asset pipeline wrapper for async.js"
   gem.summary       = "Rails asset pipeline wrapper for async.js"
   gem.homepage      = "https://github.com/jhchen/async-rails"
