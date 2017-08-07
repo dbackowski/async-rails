@@ -1,4 +1,4 @@
-# async-rails
+# async-rails [![Build Status](https://travis-ci.org/dbackowski/async-rails.svg?branch=master)](https://travis-ci.org/dbackowski/async-rails)
 
 Rails asset pipeline wrapper for [async.js](https://github.com/caolan/async).
 
