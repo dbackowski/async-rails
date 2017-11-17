@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["jhchen7@gmail.com", "damianbackowski@gmail.com"]
   gem.description   = "Rails asset pipeline wrapper for async.js"
   gem.summary       = "Rails asset pipeline wrapper for async.js"
-  gem.homepage      = "https://github.com/jhchen/async-rails"
+  gem.homepage      = "https://github.com/dbackowski/async-rails"
 
   gem.files         = Dir["{lib,vendor}/**/*"] + ["MIT-LICENSE", "README.md"]
   gem.name          = "async-rails"
